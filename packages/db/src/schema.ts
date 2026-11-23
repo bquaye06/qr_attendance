@@ -1,4 +1,4 @@
-﻿import { sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import {
   bigint,
   boolean,
@@ -25,7 +25,7 @@ import {
  *
  * The SQL migration is the source of truth for DDL; this file exists so the API
  * gets typed queries. When they disagree, the migration wins and this file is a
- * bug â€” `pnpm --filter @attend/db generate` is not used to author DDL.
+ * bug — `pnpm --filter @attend/db generate` is not used to author DDL.
  */
 
 const createdAt = timestamp('created_at', { withTimezone: true }).notNull().defaultNow();

@@ -82,6 +82,16 @@ export const EnrollmentInput = z.object({
   studentIds: z.array(UuidSchema).min(1).max(1000),
 });
 
+/**
+ * Bulk import as the console uses it: administrators have student numbers, not
+ * ids. `dryRun` returns the validation preview before anything is written.
+ */
+export const EnrollmentImportInput = z.object({
+  offeringId: UuidSchema,
+  studentNumbers: z.array(z.string().min(1).max(32)).min(1).max(2000),
+  dryRun: z.boolean().default(true),
+});
+
 export const TeachingAssignmentInput = z.object({
   offeringId: UuidSchema,
   lecturerId: UuidSchema,

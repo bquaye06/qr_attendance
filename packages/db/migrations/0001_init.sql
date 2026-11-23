@@ -1,4 +1,4 @@
-﻿-- Attend: initial schema.
+-- Attend: initial schema.
 -- Owner: packages/db. This file is append-only once applied: every later change
 -- ships as a new numbered migration.
 --

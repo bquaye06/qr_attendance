@@ -1,7 +1,7 @@
 import { eq } from 'drizzle-orm';
 import { createDatabase } from './index.ts';
 import * as schema from './schema.ts';
-import { hashPassword } from '../../apps/api/src/domain/password.ts';
+import { hashPassword } from '../../../apps/api/src/domain/password.ts';
 
 /**
  * Seed data, clearly marked. One institution, two faculties, six departments'

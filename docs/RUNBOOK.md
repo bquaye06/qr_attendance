@@ -80,6 +80,22 @@ rotate `FACE_SERVICE_SECRET`, invalidate sessions by truncating `auth_sessions`,
 Before adding a second API instance: set `REDIS_URL` (SSE, rate limits and idempotency are per-process without it).
 Before adding a second worker: nothing to do; advisory locks already serialise jobs.
 
+## Load testing
+
+Two halves, deliberately:
+
+```bash
+# 1. provision real passkeys for the cohort and mint a token (run right before k6)
+node infra/load/prepare.mjs --base http://localhost:4000 --session <session-uuid> --count 500
+# 2. drive claim + read load
+k6 run infra/k6/checkin-load.js -e SESSION_ID=<uuid> -e COOKIE='...' -e CSRF='...'
+```
+
+The claim stage and the lecturer read path are measured here. The face stage needs 500 distinct consented faces against
+a real face service: a stubbed embedding either fails the similarity threshold or trips the duplicate-face rule, so that
+measurement belongs in a consented staging run with the real model. Targets: claim p95 < 300 ms, roster p95 < 400 ms,
+and zero duplicate `(session_id, student_id)` or `(session_id, device_id)` rows afterwards.
+
 ## Verification commands for a release
 
 ```bash

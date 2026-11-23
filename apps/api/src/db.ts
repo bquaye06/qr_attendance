@@ -1,7 +1,7 @@
 import { createDatabase } from '@attend/db';
 import type { Database } from '@attend/db';
 import type { Pool } from 'pg';
-import type { Env } from '../env.ts';
+import type { Env } from './env.ts';
 
 /**
  * Two pools:

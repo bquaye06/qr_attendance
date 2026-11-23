@@ -93,9 +93,10 @@ Check-in error codes, in the order they are evaluated:
 | --- | --- | --- |
 | GET | `/admin/dashboard` | Today and term rates, by faculty, face-service health, pending counts |
 | GET/POST/PATCH/DELETE | `/admin/faculties`, `departments`, `programmes`, `courses`, `offerings`, `terms`, `rooms` | Master data, soft delete |
-| POST | `/admin/timetable` | Create a recurring slot |
+| GET/POST | `/admin/timetable` | List recurring slots with course/room labels; create a slot |
 | POST | `/admin/sessions/generate` | Generate a term of sessions; `dryRun` supported |
-| POST | `/admin/enrollments` | Bulk enrol students into an offering |
+| POST | `/admin/enrollments` | Bulk enrol by student id |
+| POST | `/admin/enrollments/import` | Bulk enrol by student number with a validation preview (`dryRun`) |
 | PATCH | `/admin/users/:id/status` | Suspend or reactivate |
 | GET | `/admin/people` | Students and staff with search |
 | GET | `/admin/review`, POST `/admin/review/:id/resolve` | Flagged attempts: confirm, reject, escalate |

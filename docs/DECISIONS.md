@@ -69,12 +69,28 @@ container. Same isolation, no Docker-in-CI requirement, and it keeps the local `
 checksum changed. `packages/db/src/schema.ts` mirrors it for typed queries. `drizzle-kit generate` exists for diffing,
 but its output must be reviewed into a numbered migration.
 
-## D-010 Console coverage in this pass
+## D-010 Console coverage
 
-Implemented with UI: dashboard, review queue, settings, devices, audit log.
-Implemented as API only: academic structure CRUD, people, timetable and session generation, enrolment, biometrics
-overview and purge (two-admin approval), roles, integrations, health. They are audited and permission-checked; only
-the screens are missing.
+Every console area now has a page: dashboard, review queue, academic structure (faculties, departments, programmes,
+courses, terms, rooms, offerings), people (search, suspend/reactivate), timetable (slots + session generation with a
+dry run), enrolment (bulk import by student number with a validation preview), devices (revoke, approve/reject resets),
+biometrics (status + two-admin purge), roles, settings, integrations (API keys, webhooks), audit log and system health.
+
+Still API-only: creating people (and the people CSV import), assigning roles to a user, and editing an existing row's
+individual fields from the UI (the endpoints exist and are audited; the screens are a follow-up).
+
+## D-014 Browser and load testing strategy
+
+- **Browser tests** run against a real stack. The passkey ceremony uses a CDP virtual authenticator and the camera
+  uses Chrome's fake media device, so the API's WebAuthn and the face service are exercised, not bypassed. Staff MFA is
+  completed by the test computing the TOTP from the secret the setup page displays.
+- **The full three-proof journey is gated behind `E2E_FULL=1`** because it writes seed state (device, template,
+  session) and needs model weights in the face service. The default CI run covers the seeded flows only.
+- **Load testing** splits the pipeline honestly: `infra/load/prepare.mjs` registers real passkeys for the cohort and
+  pre-signs assertions (k6 cannot sign), and `infra/k6/checkin-load.js` measures the claim stage and the lecturer read
+  path. The face stage cannot be load-tested with a stub — a stubbed embedding either fails the similarity threshold or
+  trips the duplicate-face rule — so a faithful 500-check-in measurement needs 500 distinct consented faces against a
+  real face service, run on staging. Recorded in RUNBOOK.
 
 ## D-011 Institution defaults
 

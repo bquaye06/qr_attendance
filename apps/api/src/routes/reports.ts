@@ -1,4 +1,4 @@
-﻿import { sql } from 'drizzle-orm';
+import { sql } from 'drizzle-orm';
 import type { FastifyInstance, FastifyReply } from 'fastify';
 import { CourseMatrix, CourseReportQuery, RangeReportQuery, SessionReportQuery } from '@attend/contracts';
 import { ApiError } from '../lib/problem.ts';
@@ -96,7 +96,7 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
       };
       input.sessions.forEach((session, index) => {
         const cell = student.cells.find((entry) => entry.sessionId === session.sessionId);
-        row[`s${index}`] = cell?.status ? shortStatus(cell.status) : 'â€“';
+        row[`s${index}`] = cell?.status ? shortStatus(cell.status) : '–';
       });
       return row;
     });
@@ -149,8 +149,8 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     });
 
     const table = matrixTable({
-      title: `${scope.courseCode} â€” ${scope.courseTitle}`,
-      subtitle: `${scope.termName} Â· attendance threshold ${threshold}% Â· generated ${new Date().toISOString()}`,
+      title: `${scope.courseCode} — ${scope.courseTitle}`,
+      subtitle: `${scope.termName} · attendance threshold ${threshold}% · generated ${new Date().toISOString()}`,
       sessions: matrix.sessions,
       students: matrix.students,
     });
@@ -188,8 +188,8 @@ export async function registerReportRoutes(app: FastifyInstance): Promise<void> 
     );
 
     const table: TableData = {
-      title: `${access.courseCode} â€” session ${access.startsAt.toISOString().slice(0, 10)}`,
-      subtitle: `${access.courseTitle} Â· ${access.roomName ?? 'no room'} Â· window closed ${access.checkinClosesAt.toISOString()}`,
+      title: `${access.courseCode} — session ${access.startsAt.toISOString().slice(0, 10)}`,
+      subtitle: `${access.courseTitle} · ${access.roomName ?? 'no room'} · window closed ${access.checkinClosesAt.toISOString()}`,
       columns: [
         { key: 'studentNumber', label: 'Student no.', width: 14 },
         { key: 'name', label: 'Name', width: 28 },
@@ -310,6 +310,6 @@ function shortStatus(status: string): string {
     case 'absent':
       return 'A';
     default:
-      return 'â€“';
+      return '–';
   }
 }

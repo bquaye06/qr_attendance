@@ -1,6 +1,6 @@
 import { z } from 'zod';
-import { SYSTEM_ROLES, USER_STATUSES, SCOPE_TYPES } from './enums.ts';
-import { PERMISSIONS } from './permissions.ts';
+import { SYSTEM_ROLES, USER_STATUSES, SCOPE_TYPES } from '../enums.ts';
+import { PERMISSIONS } from '../permissions.ts';
 
 export const SignInInput = z.object({
   email: z.string().email(),

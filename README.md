@@ -67,9 +67,10 @@ Seed data is marked: institution `DEMO`, emails under `seed.attend.local`, and f
 
 ```bash
 pnpm test               # vitest across packages (needs pnpm install)
-pnpm test:domain        # business-rule tests with zero dependencies (Node's runner)
+pnpm test:domain        # business-rule tests that need no dependencies (Node's runner)
+pnpm check:structure    # every relative/@/ import resolves, every named import exists (no install needed)
 cd services/face && pytest tests -q
-pnpm --filter @attend/web e2e    # Playwright, mocked camera
+pnpm --filter @attend/web e2e    # Playwright against a running stack (see apps/web/e2e/README.md)
 ```
 
 `pnpm test:domain` runs with nothing installed: it covers the QR token, WebAuthn verification, the decision engine, risk scoring, RBAC scope rules, session windows, retention, secrets and the report matrix.
@@ -85,18 +86,22 @@ Built end to end (schema → API → UI → permissions → audit → tests):
 - Biometrics: versioned consent, enrolment with duplicate-face search, withdrawal and grace-period purge.
 - Lecturer portal: today, live session with rotating QR and live roster over SSE, corrections with a required reason.
 - Student app: setup (consent → device → face), check-in, history with per-course percentages, appeals.
-- Console: dashboard, review queue, settings with version history, devices, audit log.
+- Console: dashboard, review queue, academic structure, people, timetable and session generation, enrolment import,
+  devices, biometrics with two-admin purge, roles, settings with version history, integrations, audit log, health.
 - Reports: course matrix, session, date range; CSV, XLSX and PDF.
 - Jobs: absence sweep and retention purge with advisory locks.
 - Face service: decode/quality/liveness/embedding pipeline, service-token auth, metrics, evaluation script, tests.
+- Tests: 115 business-rule tests (run with nothing installed), Playwright specs against a real stack, and a k6 claim/read
+  load profile with a Node harness that produces real WebAuthn assertions.
 
-Not built in this pass (the API exists for most of these; the console pages do not):
+Not built in this pass:
 
-- Console pages for academic structure, people, timetable, enrolment, biometrics, roles, integrations, system health and scheduled exports. Their API endpoints are implemented and audited (`/api/v1/admin/*`), so the remaining work is UI.
 - SAML/OIDC single sign-on. Staff use password + TOTP; see `docs/DECISIONS.md` D-001.
-- Playwright specs and the k6 load script: CI wiring and acceptance criteria are documented, the test files are not written.
-- Email notifications (at-risk students, scheduled export delivery).
-- Real model weights: `models.lock` is a template until the digests are filled in.
+- Creating people and assigning roles from the UI (API endpoints exist and are audited), and the people CSV import with
+  validation preview.
+- Email notifications (at-risk students, scheduled export delivery) and webhook delivery retries.
+- Real model weights: `models.lock` is a template until the digests are filled in, which is also why the full
+  three-proof Playwright journey is gated behind `E2E_FULL=1`.
 
 `docs/DECISIONS.md` records every deliberate deviation and default.
 

@@ -6,6 +6,7 @@ import {
   ApiKeyInput,
   CourseInput,
   DepartmentInput,
+  EnrollmentImportInput,
   EnrollmentInput,
   FacultyInput,
   GenerateSessionsInput,
@@ -380,6 +381,81 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
     return { added: (inserted as unknown as { rowCount: number }).rowCount ?? input.studentIds.length };
   });
 
+  /**
+   * Bulk enrolment by student number, with a validation preview. Administrators
+   * work from class lists, not UUIDs, so the console never has to resolve ids.
+   */
+  app.post('/api/v1/admin/enrollments/import', async (request) => {
+    const principal = await app.authenticate(request);
+    assertCan(principal, 'enrollment:write', institutionScope);
+    const input = EnrollmentImportInput.parse(request.body);
+
+    const numbers = [...new Set(input.studentNumbers.map((number) => number.trim()).filter(Boolean))];
+    if (numbers.length === 0) throw new ApiError('VALIDATION_FAILED', 'No student numbers supplied.');
+
+    const found = await rows<{ id: string; student_number: string }>(
+      app.stores.db,
+      sql`select id, student_number from students
+          where student_number = any(${numbers}::text[]) and deleted_at is null`,
+    );
+    const matchedNumbers = new Set(found.map((row) => row.student_number));
+    const unknown = numbers.filter((number) => !matchedNumbers.has(number));
+
+    const existing = await rows<{ student_id: string }>(
+      app.stores.db,
+      sql`select student_id from enrollments
+          where offering_id = ${input.offeringId}::uuid and status = 'active' and deleted_at is null`,
+    );
+    const existingIds = new Set(existing.map((row) => row.student_id));
+    const alreadyEnrolled = found
+      .filter((row) => existingIds.has(row.id))
+      .map((row) => row.student_number);
+    const toAdd = found.filter((row) => !existingIds.has(row.id));
+
+    if (input.dryRun) {
+      return {
+        dryRun: true,
+        matched: found.length,
+        unknown,
+        alreadyEnrolled,
+        toAdd: toAdd.length,
+      };
+    }
+
+    if (toAdd.length === 0) {
+      return { dryRun: false, added: 0, unknown, alreadyEnrolled };
+    }
+
+    const inserted = await app.stores.db.execute(sql`
+      insert into enrollments (offering_id, student_id, status)
+      select ${input.offeringId}::uuid, sid, 'active' from unnest(${toAdd.map((row) => row.id)}::uuid[]) as sid
+      on conflict (offering_id, student_id) do update set status = 'active', deleted_at = null, updated_at = now()
+    `);
+
+    await writeAudit(app.stores.db, {
+      actorId: principal.userId,
+      actorEmail: principal.email,
+      action: 'enrollment.imported',
+      entity: 'course_offering',
+      entityId: input.offeringId,
+      after: {
+        requested: numbers.length,
+        added: toAdd.length,
+        alreadyEnrolled: alreadyEnrolled.length,
+        unknown: unknown.length,
+      },
+      ip: request.ip,
+      requestId: request.id,
+    });
+
+    return {
+      dryRun: false,
+      added: (inserted as unknown as { rowCount: number }).rowCount ?? toAdd.length,
+      unknown,
+      alreadyEnrolled,
+    };
+  });
+
   app.patch('/api/v1/admin/users/:id/status', async (request) => {
     const principal = await app.authenticate(request);
     assertCan(principal, 'people:write', institutionScope);
@@ -402,6 +478,31 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
   });
 
   // -------------------------------------------------------------- timetable
+  app.get('/api/v1/admin/timetable', async (request) => {
+    const principal = await app.authenticate(request);
+    assertCan(principal, 'structure:read', institutionScope);
+
+    const slots = await rows<Record<string, unknown>>(
+      app.stores.db,
+      sql`
+        select t.id, t.day_of_week, t.starts_at::text as starts_at, t.ends_at::text as ends_at,
+               t.valid_from::text as valid_from, t.valid_to::text as valid_to,
+               c.code as course_code, c.title as course_title, r.name as room_name,
+               o.id as offering_id, term.name as term_name,
+               (select count(*) from class_sessions s where s.timetable_slot_id = t.id)::int as session_count
+        from timetable_slots t
+        join course_offerings o on o.id = t.offering_id
+        join courses c on c.id = o.course_id
+        join terms term on term.id = o.term_id
+        join rooms r on r.id = t.room_id
+        where t.deleted_at is null
+        order by c.code, t.day_of_week
+        limit 500
+      `,
+    );
+    return { slots };
+  });
+
   app.post('/api/v1/admin/timetable', async (request) => {
     const principal = await app.authenticate(request);
     assertCan(principal, 'timetable:write', institutionScope);
@@ -459,7 +560,7 @@ export async function registerAdminRoutes(app: FastifyInstance): Promise<void> {
       const from = new Date(`${slot.valid_from}T00:00:00Z`);
       const to = new Date(`${slot.valid_to}T00:00:00Z`);
       for (let cursor = new Date(from); cursor <= to; cursor.setUTCDate(cursor.getUTCDate() + 1)) {
-        // Postgres dow: 1=Monday â€¦ 7=Sunday; JS getUTCDay: 0=Sunday.
+        // Postgres dow: 1=Monday … 7=Sunday; JS getUTCDay: 0=Sunday.
         const dow = cursor.getUTCDay() === 0 ? 7 : cursor.getUTCDay();
         if (dow === slot.day_of_week) dates.push(new Date(cursor));
       }

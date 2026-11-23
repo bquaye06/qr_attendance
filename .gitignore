@@ -33,3 +33,8 @@ services/face/models/*.onnx
 *.log
 prompt_text.txt
 pdf_text.txt
+
+# load-test artefacts (assertions + session material)
+infra/k6/tokens.json
+apps/web/test-results/
+apps/web/playwright-report/

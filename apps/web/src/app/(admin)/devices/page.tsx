@@ -1,4 +1,6 @@
 import { Badge, Card, CardBody, CardHeader, CardTitle, EmptyState } from '@attend/ui';
+import { DeviceResetActions } from '@/components/admin/DeviceResetActions';
+import { DeviceRevokeButton } from '@/components/admin/DeviceRevokeButton';
 import { apiFetch, requireRole } from '@/lib/api';
 
 export const metadata = { title: 'Devices · Attend' };
@@ -48,9 +50,7 @@ export default async function DevicesPage() {
                   <p className="text-xs text-slate-600">{reset.reason}</p>
                   <p className="text-xs text-slate-400">{new Date(reset.created_at).toLocaleString('en-GB')}</p>
                 </div>
-                <p className="text-xs text-slate-500">
-                  Approve or reject from the API (/api/v1/admin/device-resets/:id); the console action is deferred.
-                </p>
+                <DeviceResetActions requestId={reset.id} />
               </div>
             ))
           )}
@@ -69,6 +69,7 @@ export default async function DevicesPage() {
                 <th className="px-4 py-2">Platform</th>
                 <th className="px-4 py-2">Bound</th>
                 <th className="px-4 py-2">Status</th>
+                <th className="px-4 py-2">Action</th>
               </tr>
             </thead>
             <tbody>
@@ -83,6 +84,9 @@ export default async function DevicesPage() {
                   <td className="px-4 py-2 text-xs">{new Date(device.bound_at).toLocaleDateString('en-GB')}</td>
                   <td className="px-4 py-2">
                     <Badge tone={device.status === 'active' ? 'success' : 'neutral'}>{device.status}</Badge>
+                  </td>
+                  <td className="px-4 py-2">
+                    {device.status === 'active' ? <DeviceRevokeButton deviceId={device.id} /> : null}
                   </td>
                 </tr>
               ))}
