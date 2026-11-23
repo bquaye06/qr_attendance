@@ -1,0 +1,32 @@
+{
+  "name": "@attend/db",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./schema": "./src/schema/index.ts"
+  },
+  "scripts": {
+    "build": "echo 'db is consumed as TypeScript source'",
+    "typecheck": "tsc -p tsconfig.json",
+    "lint": "eslint src",
+    "generate": "drizzle-kit generate",
+    "migrate": "node --experimental-strip-types src/migrate.ts",
+    "seed": "node --experimental-strip-types src/seed.ts",
+    "test": "vitest run"
+  },
+  "dependencies": {
+    "drizzle-orm": "^0.38.4",
+    "pg": "^8.13.1"
+  },
+  "devDependencies": {
+    "@types/node": "^22.10.5",
+    "@types/pg": "^8.11.10",
+    "drizzle-kit": "^0.30.1",
+    "typescript": "^5.8.2",
+    "vitest": "^2.1.8"
+  }
+}

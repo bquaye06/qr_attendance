@@ -1,0 +1,15 @@
+{
+  "extends": "./tsconfig.base.json",
+  "compilerOptions": {
+    "noEmit": true,
+    "baseUrl": ".",
+    "paths": {
+      "@attend/contracts": ["./packages/contracts/src/index.ts"],
+      "@attend/db": ["./packages/db/src/index.ts"]
+    }
+  },
+  "include": [
+    "packages/contracts/src/**/*.ts",
+    "apps/api/src/domain/**/*.ts"
+  ]
+}

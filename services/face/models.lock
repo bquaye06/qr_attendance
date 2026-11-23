@@ -1,0 +1,12 @@
+# Pinned model files. `sha256  filename` per line, checked at startup by
+# app.engine.verify_model_files(). Populate these with the real digests before
+# deploying: an unpinned model is an unreviewed dependency.
+
+# buffalo_l (InsightFace) — licence: see docs/DECISIONS.md. Non-commercial
+# research only for some packs; replace with a commercially licensed model if
+# the institution's use is commercial.
+# <sha256>  detection/det_10g.onnx
+# <sha256>  recognition/w600k_r50.onnx
+
+# Passive anti-spoofing (Silent-Face / GiniFASNet class of models).
+# <sha256>  antispoof.onnx

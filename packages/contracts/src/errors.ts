@@ -1,0 +1,67 @@
+/**
+ * Stable machine-readable error codes. These are part of the public API
+ * contract: clients switch on `code`, never on the human-readable `detail`.
+ * Every code maps to exactly one HTTP status so responses stay consistent.
+ */
+export const ERROR_CODES = {
+  // auth / session
+  UNAUTHENTICATED: 401,
+  INVALID_CREDENTIALS: 401,
+  MFA_REQUIRED: 401,
+  MFA_INVALID: 401,
+  SESSION_EXPIRED: 401,
+  FORBIDDEN: 403,
+  NOT_FOUND: 404,
+  CONFLICT: 409,
+  VALIDATION_FAILED: 422,
+  RATE_LIMITED: 429,
+  INTERNAL: 500,
+  SERVICE_UNAVAILABLE: 503,
+
+  // check-in: QR / claim stage
+  QR_INVALID: 400,
+  QR_EXPIRED: 400,
+  QR_SIGNATURE_INVALID: 400,
+  WINDOW_NOT_OPEN: 409,
+  WINDOW_CLOSED: 409,
+  SESSION_CANCELLED: 409,
+  SESSION_CLOSED: 409,
+  NOT_ENROLLED: 403,
+  CONSENT_REQUIRED: 403,
+  FACE_NOT_ENROLLED: 409,
+  DEVICE_NOT_REGISTERED: 403,
+  DEVICE_REVOKED: 403,
+  DEVICE_FINGERPRINT_MISMATCH: 403,
+  DEVICE_ALREADY_USED: 409,
+  ALREADY_CHECKED_IN: 409,
+  GEOFENCE_VIOLATION: 403,
+  IP_NOT_ALLOWED: 403,
+  WEBAUTHN_FAILED: 401,
+  CLAIM_INVALID: 400,
+  CLAIM_EXPIRED: 410,
+  CLAIM_ALREADY_USED: 409,
+  IDEMPOTENCY_KEY_REUSED: 409,
+
+  // check-in: face stage
+  FACE_MISMATCH: 403,
+  LIVENESS_FAILED: 403,
+  FACE_QUALITY_LOW: 422,
+  MULTIPLE_FACES: 422,
+  NO_FACE_DETECTED: 422,
+  DUPLICATE_FACE: 409,
+  FACE_SERVICE_UNAVAILABLE: 503,
+
+  // admin / policy
+  OVERRIDE_REASON_REQUIRED: 422,
+  WINDOW_ALREADY_EXTENDED: 409,
+  APPROVAL_REQUIRED: 409,
+  APPROVER_MUST_DIFFER: 409,
+  SETTING_INVALID: 422,
+  IMMUTABLE_RECORD: 409,
+} as const;
+
+export type ErrorCode = keyof typeof ERROR_CODES;
+
+export function httpStatusFor(code: ErrorCode): number {
+  return ERROR_CODES[code];
+}

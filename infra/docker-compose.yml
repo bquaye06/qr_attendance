@@ -1,0 +1,120 @@
+# Local development stack.
+# `docker compose up` brings up Postgres (with pgvector), Redis, the API, the
+# worker, the face service and the web app, with the database migrated and
+# seeded on first start.
+
+services:
+  postgres:
+    image: pgvector/pgvector:pg16
+    environment:
+      POSTGRES_USER: attend
+      POSTGRES_PASSWORD: attend
+      POSTGRES_DB: attend
+    ports:
+      - '5432:5432'
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    healthcheck:
+      test: ['CMD-SHELL', 'pg_isready -U attend -d attend']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  redis:
+    image: redis:7-alpine
+    command: ['redis-server', '--appendonly', 'no']
+    ports:
+      - '6379:6379'
+    healthcheck:
+      test: ['CMD', 'redis-cli', 'ping']
+      interval: 5s
+      timeout: 3s
+      retries: 20
+
+  migrate:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    command: ['node', '--experimental-strip-types', 'packages/db/src/migrate.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL_MIGRATE: postgresql://attend:attend@postgres:5432/attend
+    depends_on:
+      postgres:
+        condition: service_healthy
+
+  seed:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    command: ['node', '--experimental-strip-types', 'packages/db/src/seed.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL_MIGRATE: postgresql://attend:attend@postgres:5432/attend
+    depends_on:
+      migrate:
+        condition: service_completed_successfully
+
+  api:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    command: ['node', '--experimental-strip-types', 'apps/api/src/server.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://attend:attend@postgres:5432/attend
+      REDIS_URL: redis://redis:6379
+      FACE_SERVICE_URL: http://face:8000
+    ports:
+      - '4000:4000'
+    depends_on:
+      postgres:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      seed:
+        condition: service_completed_successfully
+
+  worker:
+    build:
+      context: .
+      dockerfile: infra/api.Dockerfile
+    command: ['node', '--experimental-strip-types', 'apps/api/src/jobs/worker.ts']
+    env_file: .env
+    environment:
+      DATABASE_URL: postgresql://attend:attend@postgres:5432/attend
+      REDIS_URL: redis://redis:6379
+      FACE_SERVICE_URL: http://face:8000
+    depends_on:
+      api:
+        condition: service_started
+
+  face:
+    build:
+      context: services/face
+    environment:
+      FACE_SERVICE_SECRET: ${FACE_SERVICE_SECRET}
+      FACE_MODEL_DIR: /srv/models
+    volumes:
+      - ./services/face/models:/srv/models:ro
+    ports:
+      - '8000:8000'
+    # Models are mounted, not baked in: the image stays small and the weights
+    # stay out of the registry.
+
+  web:
+    build:
+      context: .
+      dockerfile: infra/web.Dockerfile
+    environment:
+      API_URL: http://api:4000
+      NEXT_PUBLIC_API_URL: http://localhost:4000
+      NODE_ENV: production
+    ports:
+      - '3000:3000'
+    depends_on:
+      api:
+        condition: service_started
+
+volumes:
+  pgdata:

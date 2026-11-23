@@ -1,0 +1,22 @@
+{
+  "name": "@attend/config",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "exports": {
+    "./tsconfig/base.json": "./tsconfig.base.json",
+    "./tailwind/preset": "./tailwind/preset.ts",
+    "./eslint/base": "./eslint/base.mjs"
+  },
+  "scripts": {
+    "build": "echo 'config package has no build'",
+    "typecheck": "echo 'config package has no typecheck'",
+    "lint": "echo 'config package has no lint'",
+    "test": "echo 'config package has no tests'"
+  },
+  "devDependencies": {
+    "eslint": "^9.18.0",
+    "typescript": "^5.8.2",
+    "typescript-eslint": "^8.20.0"
+  }
+}

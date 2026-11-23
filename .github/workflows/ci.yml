@@ -1,0 +1,101 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  typescript:
+    runs-on: ubuntu-24.04
+    services:
+      postgres:
+        image: pgvector/pgvector:pg16
+        env:
+          POSTGRES_USER: attend
+          POSTGRES_PASSWORD: attend
+          POSTGRES_DB: attend
+        ports: ['5432:5432']
+        options: >-
+          --health-cmd "pg_isready -U attend" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+      redis:
+        image: redis:7-alpine
+        ports: ['6379:6379']
+        options: >-
+          --health-cmd "redis-cli ping" --health-interval 5s
+          --health-timeout 3s --health-retries 20
+    env:
+      DATABASE_URL: postgresql://attend:attend@localhost:5432/attend
+      DATABASE_URL_MIGRATE: postgresql://attend:attend@localhost:5432/attend
+      REDIS_URL: redis://localhost:6379
+      MASTER_KEY: 0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef
+      FINGERPRINT_PEPPER: ci-pepper
+      FACE_SERVICE_SECRET: ci-service-secret-0123456789
+      WEBAUTHN_RP_ID: localhost
+      WEBAUTHN_ALLOWED_ORIGINS: http://localhost:3000
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - name: Lint
+        run: pnpm lint
+      - name: Typecheck
+        run: pnpm typecheck
+      - name: Migrate and seed the test database
+        run: |
+          node --experimental-strip-types packages/db/src/migrate.ts
+          node --experimental-strip-types packages/db/src/seed.ts
+      - name: Unit tests
+        run: pnpm test
+      - name: Business-rule coverage gate
+        run: pnpm --filter @attend/api test -- --coverage
+      - name: Integration tests
+        run: pnpm --filter @attend/api test -- --run integration
+        env:
+          INTEGRATION: '1'
+
+  face:
+    runs-on: ubuntu-24.04
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.12'
+      - run: pip install -r services/face/requirements.txt
+      - name: Ruff
+        run: ruff check services/face
+      - name: Mypy
+        run: mypy services/face/app
+      - name: Pytest
+        run: pytest services/face/tests -q
+        working-directory: services/face
+
+  e2e:
+    runs-on: ubuntu-24.04
+    needs: [typescript]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+        with:
+          version: 9.15.0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm exec playwright install --with-deps chromium
+      - name: End-to-end with a mocked camera feed
+        run: pnpm --filter @attend/web e2e
+        env:
+          CI: '1'

@@ -1,0 +1,35 @@
+node_modules/
+dist/
+.next/
+out/
+coverage/
+*.tsbuildinfo
+
+# local caches and tooling bootstrapped inside the repo
+.npm-cache/
+.pnpm-store/
+.pnpm-state/
+.corepack/
+.tools/
+.playwright/
+test-results/
+playwright-report/
+
+# env
+.env
+.env.*
+!.env.example
+
+# python
+__pycache__/
+*.pyc
+.venv/
+.mypy_cache/
+.ruff_cache/
+services/face/models/*.onnx
+
+# misc
+.DS_Store
+*.log
+prompt_text.txt
+pdf_text.txt
